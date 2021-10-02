@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 serverSocket.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                output.append("\n" + e.getMessage());
             }
         }
         button.setClickable(true);
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
                 serverSocket.close();
                 connected = false;
             } catch (IOException e) {
-                e.printStackTrace();
+                output.append("\n" + e.getMessage());
             }
         }
 
