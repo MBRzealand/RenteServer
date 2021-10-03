@@ -22,8 +22,10 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,12 +35,10 @@ public class MainActivity extends AppCompatActivity {
     private ServerSocket serverSocket;
     Socket socket;
     boolean connected = false;
-    int counter = 0;
+    BufferedReader inputStream = null;
+    PrintWriter outputStream =null;
 
-    String annualIntrestRate;
-    String numberOfYears;
-    String loanAmount;
-    String calculatedLoan;
+    ArrayList<String> dataArray = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,9 +88,12 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-            while (!Thread.currentThread().isInterrupted()) {
+            while (true) {
 
                 socket = serverSocket.accept();
+                outputStream = new PrintWriter(socket.getOutputStream());
+                inputStream = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream()));
 
                 if(!connected){
                     output.append("\n" + "Connection established from: " + socket.getRemoteSocketAddress().toString());
@@ -98,20 +101,25 @@ public class MainActivity extends AppCompatActivity {
                     connected = true;
                 }
 
-                BufferedReader inputStream = new BufferedReader(
-                        new InputStreamReader(socket.getInputStream()));
+                while ((inputString = inputStream.readLine()) != null) {
+                    output.append("\n" + inputString);
+                    String[] arrOfStr = inputString.split(":");
+                    dataArray.add(arrOfStr[1]);
+                }
 
-                inputString = inputStream.readLine();
+                socket.shutdownInput();
 
-//                output.append("\nTekst modtaget: " + inputString);
+                String calculatedLoan = String.valueOf(Double.parseDouble(dataArray.get(2))*(Math.pow((1.00+Double.parseDouble(dataArray.get(0))),Double.parseDouble(dataArray.get(1)))));
+                dataArray.clear();
 
-                inputStream.close();
-
-                counter+=1;
-
-                setData(inputString);
+                output.append("\nLoan price: " + calculatedLoan + "kr.");
+                outputStream.println("The price of the loan is: " + calculatedLoan + "kr.");
+                outputStream.flush();
+                socket.shutdownOutput();
 
             }
+
+
 
 
         } catch (Exception e) {
@@ -122,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
 
     };
 
-    public void startServer(View view) {
+    public void startServer(View view) throws InterruptedException {
 
         button.setClickable(false);
         button.setBackgroundColor(Color.GRAY);
@@ -137,31 +145,6 @@ public class MainActivity extends AppCompatActivity {
 
         new Thread(connect).start();
 
-    }
-
-
-    void setData(String inputString) {
-        switch(counter) {
-            case 1:
-                annualIntrestRate = inputString;
-                output.append("\n" + "Annual interest rate: " + annualIntrestRate);
-            break;
-
-            case 2:
-                numberOfYears = inputString;
-                output.append("\n" + "Number of years: " + numberOfYears);
-            break;
-
-            case 3:
-                loanAmount = inputString;
-                output.append("\n" + "Loan amount: " + loanAmount);
-
-
-                calculatedLoan = String.valueOf(Double.parseDouble(loanAmount)*(Math.pow((1.00+Double.parseDouble(annualIntrestRate)),Double.parseDouble(numberOfYears))));
-                output.append("\n" + "calculation: " + calculatedLoan);
-            break;
-
-        }
     }
 
 
